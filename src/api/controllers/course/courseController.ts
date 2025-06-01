@@ -10,10 +10,10 @@ export const getCourse = async (req: Request, res: Response) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ error: "Course not found" });
 
-    // Fetch video details using `videos.list`
     const idsParam = course.videoIds.join(",");
     const videoRes = await axios.get(
-      `https://www.googleapis.com/youtube/v3/videos`, {
+      "https://www.googleapis.com/youtube/v3/videos",
+      {
         params: {
           part: "snippet,contentDetails",
           id: idsParam,
@@ -24,7 +24,7 @@ export const getCourse = async (req: Request, res: Response) => {
 
     const items = videoRes.data.items;
 
-    // Get channel name from the first video if not already set
+    // Get channel name from first video if not already saved
     let channelName = course.description;
     if (!channelName && items.length > 0) {
       channelName = items[0].snippet.channelTitle || "Unknown Channel";
@@ -36,7 +36,7 @@ export const getCourse = async (req: Request, res: Response) => {
       description: item.snippet.description,
       thumbnail: item.snippet.thumbnails?.high?.url,
       position: index + 1,
-      duration: item.contentDetails.duration
+      duration: item.contentDetails.duration,
     }));
 
     return res.status(200).json({
@@ -56,9 +56,9 @@ export const getCourse = async (req: Request, res: Response) => {
 // Post newly converted course
 export const saveCourse = async (req: Request, res: Response) => {
   const { title, playlistId, description, videoIds } = req.body;
-  const userId = req.user?.uid; // ✅ Using uid consistently
+  const userId = req.user?.uid;
 
-  console.log("Save Course - User ID:", userId); // Debug log
+  console.log("Save Course - User ID:", userId);
 
   if (!userId || !title || !playlistId || !description || !videoIds?.length) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -70,7 +70,16 @@ export const saveCourse = async (req: Request, res: Response) => {
       return res.status(409).json({ error: "Course already exists" });
     }
 
-    const course = new Course({ userId, title, playlistId, description, videoIds });
+    const course = new Course({
+      userId,
+      title,
+      playlistId,
+      description,
+      videoIds,
+      progress: 0,
+      currentVideoId: "",
+    });
+
     await course.save();
     res.status(201).json(course);
   } catch (error) {
@@ -90,61 +99,121 @@ export const getUserCourses = async (req: Request, res: Response) => {
   try {
     const courses = await Course.find({ userId });
 
-    // Fetch thumbnails and ensure description for each course, and include videoIds
     const coursesWithDetails = await Promise.all(
       courses.map(async (course) => {
         let thumbnail = null;
-        let channelName = course.description; // Use saved description if available
+        let channelName = course.description;
+        let videos = [];
 
-        // Only attempt to fetch video details if description is missing from DB
-        if (!channelName && course.videoIds && course.videoIds.length > 0) {
+        if (course.videoIds?.length > 0) {
           try {
-            // Fetch details (including thumbnail and channelTitle) for the first video
-            const firstVideoId = course.videoIds[0];
+            // Fetch all videos in the course
+            const idsParam = course.videoIds.join(",");
+            console.log("Fetching videos for course:", course._id, "Video IDs:", idsParam);
+            
             const videoRes = await axios.get(
-              `https://www.googleapis.com/youtube/v3/videos`, {
+              "https://www.googleapis.com/youtube/v3/videos",
+              {
                 params: {
                   part: "snippet",
-                  id: firstVideoId,
+                  id: idsParam,
                   key: process.env.YOUTUBE_API_KEY,
                 },
               }
             );
 
-            const videoSnippet = videoRes.data.items?.[0]?.snippet;
+            console.log("YouTube API Response:", videoRes.data);
 
-            thumbnail = videoSnippet?.thumbnails?.high?.url || null;
+            const items = videoRes.data.items || [];
+            videos = items.map((item: any, index: number) => ({
+              videoId: item.id,
+              title: item.snippet.title,
+              position: index + 1,
+            }));
 
-            // Update channelName only if fetched successfully
-            if (videoSnippet?.channelTitle) {
-               channelName = videoSnippet.channelTitle;
-            } else {
-              channelName = "Unknown Channel"; // Fallback if fetch is successful but no channel title
+            if (items.length > 0) {
+              const firstVideo = items[0];
+              thumbnail = firstVideo.snippet.thumbnails?.high?.url || null;
+              if (firstVideo.snippet.channelTitle) {
+                channelName = firstVideo.snippet.channelTitle;
+              }
             }
-
           } catch (error) {
-            console.error(`Error fetching video details for course ${course._id}:`, error);
-            channelName = "Unknown Channel"; // Fallback if API call fails
+            console.error(`Error fetching video for course ${course._id}:`, error);
           }
-        } else if (!channelName) {
-             channelName = "Unknown Channel"; // Fallback if no videoIds or description missing from DB
         }
 
-        return {
+        if (!channelName) {
+          channelName = "Unknown Channel";
+        }
+
+        const courseData = {
           _id: course._id,
           title: course.title,
           playlistId: course.playlistId,
           description: channelName,
           createdAt: course.createdAt,
           thumbnail,
-          videoIds: course.videoIds, // Include videoIds here
+          videos,
+          videoIds: course.videoIds, // Keep this for backward compatibility
         };
+
+        console.log("Processed course data:", courseData);
+        return courseData;
       })
     );
 
     res.status(200).json({ courses: coursesWithDetails });
   } catch (error) {
     console.error("Error fetching user courses:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Update the progress of a Course
+export const updateCourseProgress = async (req: Request, res: Response) => {
+  const userId = req.user?.uid;
+  const { courseId } = req.params;
+  const { progress, currentVideoId } = req.body;
+
+  if (!userId || (progress === undefined && !currentVideoId)) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  try {
+    const course = await Course.findOne({ _id: courseId, userId });
+    if (!course) return res.status(404).json({ error: "Course not found" });
+
+    if (progress !== undefined) course.progress = progress;
+    if (currentVideoId) course.currentVideoId = currentVideoId;
+
+    await course.save();
+
+    res.status(200).json({ message: "Progress updated", course });
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+//fetch the progress of the course
+// Get course progress for a specific course
+export const getCourseProgress = async (req: Request, res: Response) => {
+  const userId = req.user?.uid;
+  const { courseId } = req.params;
+
+  try {
+    const course = await Course.findOne({ _id: courseId, userId });
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    res.status(200).json({
+      progress: course.progress,
+      currentVideoId: course.currentVideoId,
+    });
+  } catch (error) {
+    console.error("Error fetching course progress:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

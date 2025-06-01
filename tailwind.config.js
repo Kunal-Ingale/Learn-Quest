@@ -16,7 +16,10 @@ module.exports = {
         'accent': {
           600: '#7C3AED',
         }
-      }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+      },
     },
   },
   plugins: [],

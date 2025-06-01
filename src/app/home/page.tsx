@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import { getAuthHeaders } from "@/lib/api";
+import Footer from "@/components/layout/Footer";
 
 // Safe imports with fallbacks
 const SafeComponent = ({
@@ -120,7 +121,7 @@ const Home = () => {
                 </h1>
                 <p className="text-xl text-white/80 max-w-2xl">
                   Transform YouTube educational content into structured
-                  learning. Track progress, take notes, and learn at your pace.
+                  learning. Track progress and learn at your pace.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <button
@@ -130,7 +131,7 @@ const Home = () => {
                     Try Now
                   </button>
                   <Link
-                    href="/dashboard"
+                    href="/mycourses"
                     className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-6 py-3 rounded-md font-semibold transition-colors inline-flex items-center justify-center"
                   >
                     <span className="mr-2">▶</span> Start Learning
@@ -217,7 +218,7 @@ const Home = () => {
           </section>
 
           {/* Featured Courses */}
-          <section className="py-16 bg-gray-50">
+          {/* <section className="py-16 bg-gray-50">
             <div className="container mx-auto px-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-10">
                 <div>
@@ -271,7 +272,7 @@ const Home = () => {
                 </div>
               )}
             </div>
-          </section>
+          </section> */}
 
           {/* CTA */}
           <section className="py-16 bg-white">
@@ -295,6 +296,7 @@ const Home = () => {
             </div>
           </section>
         </div>
+        {/* <Footer /> */}
       </SafeComponent>
     </>
   );

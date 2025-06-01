@@ -8,15 +8,19 @@ export interface ICourse extends Document {
   description: string;
   videoIds: string[];
   createdAt: Date;
+  progress: number;        
+  currentVideoId: string;
 }
 
 const CourseSchema = new Schema<ICourse>({
-  userId: { type: String, required: true }, // 👈 Required user field
+  userId: { type: String, required: true }, 
   title: { type: String, required: true },
   playlistId: { type: String, required: true },
   description: { type: String, required: true },
   videoIds: { type: [String], required: true },
   createdAt: { type: Date, default: Date.now },
+  progress: { type: Number, default: 0 },           
+  currentVideoId: { type: String, default: "" }, 
 });
 
 const Course = mongoose.models.Course || mongoose.model<ICourse>("Course", CourseSchema);

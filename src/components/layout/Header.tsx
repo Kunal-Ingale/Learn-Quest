@@ -42,7 +42,7 @@ const Header = () => {
           className="text-2xl font-bold text-blue-600 cursor-pointer"
           onClick={() => router.push("/")}
         >
-          Coursify
+          LearnQuest
         </h1>
       </div>
 

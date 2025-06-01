@@ -1,9 +1,13 @@
 "use client";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import { apiCall } from "@/lib/api";
+import {
+  getCourseProgress,
+  updateCourseProgress,
+} from "../../api/course/[courseId]/progress/progress";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 interface Video {
@@ -177,52 +181,111 @@ const CoursePage: React.FC = () => {
   }, [courseId, authReady, router]);
 
   // Load progress from localStorage
-  useEffect(() => {
-    if (courseId && typeof courseId === "string") {
-      const saved = localStorage.getItem(`progress-${courseId}`);
-      if (saved) {
-        try {
-          setCompletedVideos(JSON.parse(saved));
-        } catch (e) {
-          console.error("Error parsing saved progress:", e);
-          setCompletedVideos([]);
-        }
-      }
-      setProgressLoaded(true);
-    }
-  }, [courseId]);
+  // useEffect(() => {
+  //   if (courseId && typeof courseId === "string") {
+  //     const saved = localStorage.getItem(`progress-${courseId}`);
+  //     if (saved) {
+  //       try {
+  //         setCompletedVideos(JSON.parse(saved));
+  //       } catch (e) {
+  //         console.error("Error parsing saved progress:", e);
+  //         setCompletedVideos([]);
+  //       }
+  //     }
+  //     setProgressLoaded(true);
+  //   }
+  // }, [courseId]);
 
-  // Save progress to localStorage
-  useEffect(() => {
-    if (courseId && progressLoaded && typeof courseId === "string") {
-      localStorage.setItem(
-        `progress-${courseId}`,
-        JSON.stringify(completedVideos)
-      );
-    }
-  }, [completedVideos, courseId, progressLoaded]);
+  // // Save progress to localStorage
+  // useEffect(() => {
+  //   if (courseId && progressLoaded && typeof courseId === "string") {
+  //     localStorage.setItem(
+  //       `progress-${courseId}`,
+  //       JSON.stringify(completedVideos)
+  //     );
+  //   }
+  // }, [completedVideos, courseId, progressLoaded]);
 
-  // Load progress history from localStorage
+  // // Load progress history from localStorage
+  // useEffect(() => {
+  //   if (courseId && typeof courseId === "string") {
+  //     const saved = localStorage.getItem(`progress-history-${courseId}`);
+  //     if (saved) {
+  //       try {
+  //         const history = JSON.parse(saved);
+  //         // Sort by completedAt in descending order (latest first)
+  //         history.sort(
+  //           (a: ProgressHistory, b: ProgressHistory) =>
+  //             new Date(b.completedAt).getTime() -
+  //             new Date(a.completedAt).getTime()
+  //         );
+  //         setProgressHistory(history);
+  //       } catch (e) {
+  //         console.error("Error parsing saved progress history:", e);
+  //         setProgressHistory([]);
+  //       }
+  //     }
+  //   }
+  // }, [courseId]);
+
+  /* ──────────────────────────────────────────────────────────
+     3. ***🆕*** Fetch PROGRESS from backend once we have the course
+  ────────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (courseId && typeof courseId === "string") {
-      const saved = localStorage.getItem(`progress-history-${courseId}`);
-      if (saved) {
-        try {
-          const history = JSON.parse(saved);
-          // Sort by completedAt in descending order (latest first)
-          history.sort(
-            (a: ProgressHistory, b: ProgressHistory) =>
-              new Date(b.completedAt).getTime() -
-              new Date(a.completedAt).getTime()
-          );
-          setProgressHistory(history);
-        } catch (e) {
-          console.error("Error parsing saved progress history:", e);
-          setProgressHistory([]);
-        }
+    const fetchProgress = async () => {
+      if (!course?._id) return;
+      try {
+        console.log("Attempting to fetch progress for course:", course._id);
+        const { progress, currentVideoId } = await getCourseProgress(
+          course._id
+        );
+        console.log("Fetched progress:", progress);
+        console.log("Fetched currentVideoId:", currentVideoId);
+
+        // progress == percentage, currentVideoId == string | ""
+        const completedCount = Math.round(
+          (progress / 100) * course.videos.length
+        );
+        const completedIds = course.videos
+          .slice(0, completedCount)
+          .map((v) => v.videoId);
+        setCompletedVideos(completedIds);
+
+        const initial =
+          course.videos.find((v) => v.videoId === currentVideoId) ||
+          course.videos[0];
+        console.log("Initial video determined:", initial);
+        setCurrentVideo(initial);
+      } catch (err: any) {
+        // 404 just means no progress stored yet – silently continue
+        console.info(
+          "No stored progress for this course yet or error fetching:",
+          err
+        );
+        setCurrentVideo(course?.videos[0]);
       }
-    }
-  }, [courseId]);
+    };
+    fetchProgress();
+  }, [course]);
+
+  // ----------------------------------
+  const progressPercent = useMemo(() => {
+    if (!course) return 0;
+    return Math.round((completedVideos.length / course.videos.length) * 100);
+  }, [completedVideos, course]);
+
+  // every time completedVideos or currentVideo changes – push to DB
+  useEffect(() => {
+    if (!course) return;
+    const body: { progress?: number; currentVideoId?: string } = {};
+    body.progress = progressPercent;
+    if (currentVideo?.videoId) body.currentVideoId = currentVideo.videoId;
+    updateCourseProgress(course._id, body).catch((err) =>
+      console.error("Could not update progress:", err)
+    );
+  }, [progressPercent, currentVideo?.videoId, course]);
+
+  // -------------------------------------
 
   // Initialize YouTube API
   useEffect(() => {
@@ -323,11 +386,6 @@ const CoursePage: React.FC = () => {
     completedVideos,
   ]);
 
-  const progressPercent = useMemo(() => {
-    if (!course || !progressLoaded || course.videos.length === 0) return 0;
-    return Math.round((completedVideos.length / course.videos.length) * 100);
-  }, [course, completedVideos, progressLoaded]);
-
   const handleVideoClick = (video: Video) => {
     if (video.videoId !== currentVideo?.videoId) {
       setCurrentVideo(video);
@@ -405,7 +463,7 @@ const CoursePage: React.FC = () => {
     });
   };
 
-  if (loading || !progressLoaded) {
+  if (loading || !course) {
     return (
       <>
         <Header />
@@ -478,7 +536,7 @@ const CoursePage: React.FC = () => {
     <>
       <Header />
       <div className="min-h-screen bg-gray-50 overflow-hidden">
-        {/* Top Header with Course Title and Compact Progress */}
+        {/* Top Header with Course Title and Progress */}
         <div className="bg-blue-50 rounded-xl shadow-md border border-blue-200 my-4 mx-4 lg:mx-6 p-4 lg:p-6 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -493,17 +551,42 @@ const CoursePage: React.FC = () => {
                 <span>Started on {startDate}</span>
               </div>
             </div>
-            {/* Add Circular Progress */}
+            {/* Progress indicator */}
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <div className="text-sm font-medium text-blue-900">
-                  Course Progress
-                </div>
-                <div className="text-xs text-blue-700">
-                  {progressPercent}% Complete
-                </div>
+              <span className="text-sm font-medium text-blue-900">
+                Progress:
+              </span>
+              <div className="h-12 w-12 relative">
+                <svg
+                  viewBox="0 0 36 36"
+                  style={{
+                    transform: "rotate(-90deg)",
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <path
+                    d="M18 2.0845
+                       a 15.9155 15.9155 0 0 1 0 31.831
+                       a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M18 2.0845
+                       a 15.9155 15.9155 0 0 1 0 31.831"
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="3"
+                    strokeDasharray="100"
+                    strokeDashoffset={100 - progressPercent}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold">
+                  {progressPercent}%
+                </span>
               </div>
-              <CompactCircularProgress percentage={progressPercent} size={48} />
             </div>
           </div>
         </div>
