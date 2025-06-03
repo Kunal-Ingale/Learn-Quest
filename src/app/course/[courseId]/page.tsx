@@ -9,6 +9,7 @@ import {
   updateCourseProgress,
 } from "../../api/course/[courseId]/progress/progress";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useAuth } from "../../../hooks/AuthContext";
 
 interface Video {
   videoId: string;
@@ -99,6 +100,7 @@ const formatDuration = (duration?: string): string => {
 const CoursePage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
+  const { logout } = useAuth();
   const courseId = params?.courseId as string;
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -460,6 +462,16 @@ const CoursePage: React.FC = () => {
     });
   };
 
+  // Replace any router.push() calls with Next.js router.push()
+  const handleLogin = () => {
+    router.push("/login");
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/signin");
+  };
+
   if (loading || !course) {
     return (
       <>
@@ -484,7 +496,7 @@ const CoursePage: React.FC = () => {
               Please log in to view this course.
             </p>
             <button
-              onClick={() => router.push("/auth")}
+              onClick={handleLogin}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Go to Login
