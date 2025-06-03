@@ -22,9 +22,9 @@
       "dom.iterable",
       "esnext"
     ],
-    "noEmit": true,
+    "noEmit": false,
     "incremental": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "plugins": [
       {
         "name": "next"
