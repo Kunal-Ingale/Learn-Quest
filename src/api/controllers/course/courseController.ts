@@ -58,7 +58,6 @@ export const saveCourse = async (req: Request, res: Response) => {
   const { title, playlistId, description, videoIds } = req.body;
   const userId = req.user?.uid;
 
-  console.log("Save Course - User ID:", userId);
 
   if (!userId || !title || !playlistId || !description || !videoIds?.length) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -92,7 +91,7 @@ export const saveCourse = async (req: Request, res: Response) => {
 export const getUserCourses = async (req: Request, res: Response) => {
   const userId = req.user?.uid;
 
-  console.log("Get User Courses - User ID:", userId);
+ 
 
   if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -109,7 +108,7 @@ export const getUserCourses = async (req: Request, res: Response) => {
           try {
             // Fetch all videos in the course
             const idsParam = course.videoIds.join(",");
-            console.log("Fetching videos for course:", course._id, "Video IDs:", idsParam);
+            //console.log("Fetching videos for course:", course._id, "Video IDs:", idsParam);
             
             const videoRes = await axios.get(
               "https://www.googleapis.com/youtube/v3/videos",
@@ -122,7 +121,7 @@ export const getUserCourses = async (req: Request, res: Response) => {
               }
             );
 
-            console.log("YouTube API Response:", videoRes.data);
+         //   console.log("YouTube API Response:", videoRes.data);
 
             const items = videoRes.data.items || [];
             videos = items.map((item: any, index: number) => ({
@@ -158,7 +157,7 @@ export const getUserCourses = async (req: Request, res: Response) => {
           videoIds: course.videoIds, // Keep this for backward compatibility
         };
 
-        console.log("Processed course data:", courseData);
+       // console.log("Processed course data:", courseData);
         return courseData;
       })
     );

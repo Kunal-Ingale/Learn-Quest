@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
-import Header from "@/components/layout/Header";
-import { apiCall } from "@/lib/api";
+import Header from "../../../components/layout/Header";
+import { apiCall } from "../../../lib/api";
 import {
   getCourseProgress,
   updateCourseProgress,
