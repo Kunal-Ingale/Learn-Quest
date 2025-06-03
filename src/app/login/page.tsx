@@ -79,7 +79,7 @@ const Login: React.FC = () => {
       <div className="w-full md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-400 text-white p-10 flex flex-col justify-center min-h-[60vh] md:min-h-screen">
         <div>
           <Link href="/" className="text-4xl font-bold mb-6 inline-block">
-            LearningTube
+            LearnQuest
           </Link>
           <h1 className="text-4xl font-bold leading-tight mb-4">
             Transform Your Learning Experience
