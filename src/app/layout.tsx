@@ -1,12 +1,6 @@
-import type { Metadata } from "next";
 import ClientLayout from "./client-layout";
 import "./globals.css";
-
-export const metadata: Metadata = {
-  title: "LearningTube - Transform YouTube Playlists into Interactive Courses",
-  description:
-    "Convert YouTube educational content into structured learning. Track progress, take notes, and learn at your pace.",
-};
+import { AuthProvider } from "@/hooks/AuthContext";
 
 export default function RootLayout({
   children,
@@ -15,26 +9,30 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <link
-        rel="apple-touch-icon"
-        sizes="180x180"
-        href="/apple-touch-icon.png"
-      />
-      <link
-        rel="icon"
-        type="image/png"
-        sizes="32x32"
-        href="/favicon-32x32.png"
-      />
-      <link
-        rel="icon"
-        type="image/png"
-        sizes="16x16"
-        href="/favicon-16x16.png"
-      />
-      <link rel="manifest" href="/site.webmanifest" />
+      <head>
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/apple-touch-icon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/favicon-16x16.png"
+        />
+        <link rel="manifest" href="/site.webmanifest" />
+      </head>
       <body>
-        <ClientLayout>{children}</ClientLayout>
+        <AuthProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </AuthProvider>
       </body>
     </html>
   );

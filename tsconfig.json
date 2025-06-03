@@ -24,7 +24,7 @@
     ],
     "noEmit": false,
     "incremental": true,
-    "isolatedModules": false,
+    "isolatedModules": true,
     "plugins": [
       {
         "name": "next"

@@ -3,9 +3,8 @@
 import { useAuth } from "@/hooks/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { apiCall } from "@/lib/api";
+import axios from "axios";
 import Header from "@/components/layout/Header";
-import { getCourseProgress } from "@/app/api/course/[courseId]/progress/progress";
 
 interface Course {
   _id: string;
@@ -70,24 +69,39 @@ const MyCourses = () => {
       try {
         setLoading(true);
         setError("");
-        const response = await apiCall("/course/mycourses");
-        // console.log("API Response:", response);
-        const fetchedCourses = response?.courses || [];
+
+        // Get Firebase ID token
+        const token = await user.getIdToken();
+
+        // Fetch courses
+        const response = await axios.get("/api/course/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!Array.isArray(response.data)) {
+          throw new Error("Invalid response format");
+        }
 
         // Fetch progress for each course
         const coursesWithProgress = await Promise.all(
-          fetchedCourses.map(async (course: Course) => {
+          response.data.map(async (course: Course) => {
             try {
-              const { progress, currentVideoId } = await getCourseProgress(
-                course._id
+              const progressResponse = await axios.get(
+                `/api/course/${course._id}/progress`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
               );
-              const courseWithProgress = {
+
+              return {
                 ...course,
-                progress: progress || 0,
-                currentVideoId: currentVideoId || "",
+                progress: progressResponse.data.progress || 0,
+                currentVideoId: progressResponse.data.currentVideoId || "",
               };
-              //  console.log("Course with progress:", courseWithProgress);
-              return courseWithProgress;
             } catch (err) {
               console.error(
                 `Error fetching progress for course ${course._id}:`,
@@ -114,11 +128,48 @@ const MyCourses = () => {
     fetchCourses();
   }, [user, authChecked]);
 
-  if (!authChecked || loading)
-    return <p className="p-4 text-center">Loading...</p>;
-  if (error) return <p className="p-4 text-center text-red-500">{error}</p>;
-  if (courses.length === 0)
-    return <p className="p-4 text-center">No courses enrolled yet.</p>;
+  if (!authChecked || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center px-4">
+          <p className="text-gray-600 mb-4">No courses enrolled yet.</p>
+          <button
+            onClick={() => router.push("/")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Browse Courses
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -138,8 +189,6 @@ const MyCourses = () => {
             .map((course) => {
               const firstVideoId =
                 course.videos?.[0]?.videoId || course.videoIds?.[0];
-              // console.log("First video ID:", firstVideoId);
-              // console.log("Course thumbnail:", course.thumbnail);
               const progressPercent = course.progress ?? 0;
               const totalVideos =
                 course.videos?.length ?? course.videoIds?.length ?? 0;

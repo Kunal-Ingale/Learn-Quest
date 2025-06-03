@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/AuthContext";
 import axios from "axios";
 import Header from "@/components/layout/Header";
+import dynamic from "next/dynamic";
 
 interface Course {
   _id: string;
@@ -21,7 +22,7 @@ const MyCourses: React.FC = () => {
       if (!user) return;
 
       try {
-        const token = await user.getIdToken(); // 🔥 Get Firebase ID token
+        const token = await user.getIdToken();
         const res = await axios.get("/api/course/user", {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -70,4 +71,17 @@ const MyCourses: React.FC = () => {
   );
 };
 
-export default MyCourses;
+// Dynamically import the MyCourses component with SSR disabled
+const MyCoursesPage = dynamic(() => Promise.resolve(MyCourses), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  ),
+});
+
+export default MyCoursesPage;
