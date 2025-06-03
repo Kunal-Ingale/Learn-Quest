@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ClientLayout from "./client-layout";
-import "./globals.css"; // ✅ ADD THIS LINE - This loads Tailwind CSS
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "LearningTube - Transform YouTube Playlists into Interactive Courses",
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <link
         rel="apple-touch-icon"
         sizes="180x180"

@@ -150,9 +150,38 @@ const CoursePage: React.FC = () => {
         }
 
         setCourse(data);
-        if (data.videos && data.videos.length > 0) {
+
+        // Fetch progress immediately after setting course
+        try {
+          const { progress, currentVideoId } = await getCourseProgress(
+            courseId
+          );
+          console.log("Fetched progress:", progress);
+          console.log("Fetched currentVideoId:", currentVideoId);
+
+          const completedCount = Math.round(
+            (progress / 100) * data.videos.length
+          );
+          const completedIds = data.videos
+            .slice(0, completedCount)
+            .map((v: Video) => v.videoId);
+          setCompletedVideos(completedIds);
+
+          const initial =
+            data.videos.find((v: Video) => v.videoId === currentVideoId) ||
+            data.videos[0];
+          setCurrentVideo(initial);
+          setProgressLoaded(true);
+        } catch (err) {
+          console.info(
+            "No stored progress for this course yet or error fetching:",
+            err
+          );
           setCurrentVideo(data.videos[0]);
+          setCompletedVideos([]);
+          setProgressLoaded(true);
         }
+
         setStartDate(
           new Date(data.createdAt).toLocaleDateString("en-GB", {
             day: "2-digit",
@@ -228,46 +257,6 @@ const CoursePage: React.FC = () => {
   //   }
   // }, [courseId]);
 
-  /* ──────────────────────────────────────────────────────────
-     3. ***🆕*** Fetch PROGRESS from backend once we have the course
-  ────────────────────────────────────────────────────────── */
-  useEffect(() => {
-    const fetchProgress = async () => {
-      if (!course?._id) return;
-      try {
-        console.log("Attempting to fetch progress for course:", course._id);
-        const { progress, currentVideoId } = await getCourseProgress(
-          course._id
-        );
-        console.log("Fetched progress:", progress);
-        console.log("Fetched currentVideoId:", currentVideoId);
-
-        // progress == percentage, currentVideoId == string | ""
-        const completedCount = Math.round(
-          (progress / 100) * course.videos.length
-        );
-        const completedIds = course.videos
-          .slice(0, completedCount)
-          .map((v) => v.videoId);
-        setCompletedVideos(completedIds);
-
-        const initial =
-          course.videos.find((v) => v.videoId === currentVideoId) ||
-          course.videos[0];
-        console.log("Initial video determined:", initial);
-        setCurrentVideo(initial);
-      } catch (err: any) {
-        // 404 just means no progress stored yet – silently continue
-        console.info(
-          "No stored progress for this course yet or error fetching:",
-          err
-        );
-        setCurrentVideo(course?.videos[0]);
-      }
-    };
-    fetchProgress();
-  }, [course]);
-
   // ----------------------------------
   const progressPercent = useMemo(() => {
     if (!course) return 0;
@@ -277,13 +266,21 @@ const CoursePage: React.FC = () => {
   // every time completedVideos or currentVideo changes – push to DB
   useEffect(() => {
     if (!course) return;
+
+    // Don't update if we haven't loaded the initial progress yet
+    if (!progressLoaded) return;
+
     const body: { progress?: number; currentVideoId?: string } = {};
     body.progress = progressPercent;
     if (currentVideo?.videoId) body.currentVideoId = currentVideo.videoId;
-    updateCourseProgress(course._id, body).catch((err) =>
-      console.error("Could not update progress:", err)
-    );
-  }, [progressPercent, currentVideo?.videoId, course]);
+
+    // Only update if we have actual changes
+    if (body.progress !== undefined || body.currentVideoId) {
+      updateCourseProgress(course._id, body).catch((err) =>
+        console.error("Could not update progress:", err)
+      );
+    }
+  }, [progressPercent, currentVideo?.videoId, course, progressLoaded]);
 
   // -------------------------------------
 
