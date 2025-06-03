@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import next from "next";
 import convert from "./src/api/convert";
 import course from "./src/api/course";
+import 'module-alias/register';
 
 dotenv.config();
 
