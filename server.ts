@@ -1,3 +1,4 @@
+import 'module-alias/register';
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -5,7 +6,6 @@ import mongoose from "mongoose";
 import next from "next";
 import convert from "./src/api/convert";
 import course from "./src/api/course";
-import 'module-alias/register';
 
 dotenv.config();
 
