@@ -24,7 +24,8 @@ app.prepare().then(() => {
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
-      "http://localhost:8080"
+      "http://localhost:8080",
+      "https://learnquest-ng5h.onrender.com",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
