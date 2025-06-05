@@ -7,6 +7,47 @@ import { apiCall } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// Circular Progress Component
+const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
+  percentage,
+  size = 40,
+}) => {
+  const radius = (size - 4) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#e5e7eb"
+          strokeWidth="4"
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#3b82f6"
+          strokeWidth="4"
+          fill="transparent"
+          strokeDasharray={strokeDasharray}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-300 ease-in-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-blue-600">{percentage}%</span>
+      </div>
+    </div>
+  );
+};
+
 interface Course {
   _id: string;
   title: string;
@@ -99,11 +140,20 @@ const MyCourses: React.FC = () => {
             {courses.map((course) => (
               <li
                 key={course._id}
-                className="border p-4 rounded shadow hover:shadow-md transition-shadow cursor-pointer"
+                className="border p-4 rounded shadow hover:shadow-md transition-shadow cursor-pointer bg-white"
               >
                 <Link href={`/course/${course._id}`} className="block h-full">
-                  <h3 className="text-xl font-semibold">{course.title}</h3>
-                  <p className="text-gray-600">{course.description}</p>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold flex-1 pr-2">
+                      {course.title}
+                    </h3>
+                    {course.progress !== undefined && (
+                      <CircularProgress percentage={course.progress} />
+                    )}
+                  </div>
+                  <p className="text-gray-600 text-sm mb-3">
+                    {course.description}
+                  </p>
                   {course.thumbnail && (
                     <img
                       src={course.thumbnail}
@@ -111,13 +161,15 @@ const MyCourses: React.FC = () => {
                       className="w-full h-48 object-cover rounded mt-2"
                     />
                   )}
-                  <div className="mt-2 text-sm text-muted-foreground">
+                  <div className="mt-3 text-sm text-gray-500">
                     <p>
-                      Created at: {new Date(course.createdAt).toLocaleString()}
+                      Started: {new Date(course.createdAt).toLocaleDateString()}
                     </p>
-                    {course.videos && <p>{course.videos.length} videos</p>}
-                    {course.progress !== undefined && (
-                      <p>Progress: {course.progress}%</p>
+                    {course.videos && (
+                      <p className="mt-1">
+                        {course.videos.length}{" "}
+                        {course.videos.length === 1 ? "video" : "videos"}
+                      </p>
                     )}
                   </div>
                 </Link>
