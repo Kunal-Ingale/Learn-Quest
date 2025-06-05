@@ -38,7 +38,7 @@ const Header = () => {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/signin");
+    router.push("/login");
   };
 
   const toggleMobileMenu = () => {
