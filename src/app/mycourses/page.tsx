@@ -4,6 +4,8 @@ import { useAuth } from "@/hooks/AuthContext";
 import Header from "@/components/layout/Header";
 import dynamic from "next/dynamic";
 import { apiCall } from "@/lib/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Course {
   _id: string;
@@ -13,15 +15,24 @@ interface Course {
   description?: string;
   thumbnail?: string;
   videos?: any[];
+  progress?: number;
+  currentVideoId?: string;
 }
 
 const MyCourses: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const router = useRouter();
+
   useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+      return;
+    }
+
     const fetchCourses = async () => {
       if (!user) return;
 
@@ -45,10 +56,12 @@ const MyCourses: React.FC = () => {
       }
     };
 
-    fetchCourses();
-  }, [user]);
+    if (user) {
+      fetchCourses();
+    }
+  }, [user, authLoading, router]);
 
-  if (loading)
+  if (authLoading || loading)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -82,29 +95,32 @@ const MyCourses: React.FC = () => {
         {courses.length === 0 ? (
           <p>You haven't created any courses yet.</p>
         ) : (
-          <ul className="space-y-4">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 space-y-0">
             {courses.map((course) => (
               <li
                 key={course._id}
-                className="border p-4 rounded shadow hover:shadow-md transition-shadow"
+                className="border p-4 rounded shadow hover:shadow-md transition-shadow cursor-pointer"
               >
-                <h3 className="text-xl font-semibold">{course.title}</h3>
-                <p className="text-gray-600">{course.description}</p>
-                {course.thumbnail && (
-                  <img
-                    src={course.thumbnail}
-                    alt={course.title}
-                    className="w-full h-48 object-cover rounded mt-2"
-                  />
-                )}
-                <p className="text-sm text-muted-foreground mt-2">
-                  Created at: {new Date(course.createdAt).toLocaleString()}
-                </p>
-                {course.videos && (
-                  <p className="text-sm text-muted-foreground">
-                    {course.videos.length} videos
-                  </p>
-                )}
+                <Link href={`/course/${course._id}`} className="block h-full">
+                  <h3 className="text-xl font-semibold">{course.title}</h3>
+                  <p className="text-gray-600">{course.description}</p>
+                  {course.thumbnail && (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-48 object-cover rounded mt-2"
+                    />
+                  )}
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    <p>
+                      Created at: {new Date(course.createdAt).toLocaleString()}
+                    </p>
+                    {course.videos && <p>{course.videos.length} videos</p>}
+                    {course.progress !== undefined && (
+                      <p>Progress: {course.progress}%</p>
+                    )}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -114,7 +130,6 @@ const MyCourses: React.FC = () => {
   );
 };
 
-// Dynamically import the MyCourses component with SSR disabled
 const MyCoursesPage = dynamic(() => Promise.resolve(MyCourses), {
   ssr: false,
   loading: () => (

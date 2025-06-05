@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "../../components/layout/Header";
 import { getAuthHeaders } from "@/lib/api";
 import Footer from "@/components/layout/Footer";
+import { useAuth } from "@/hooks/AuthContext";
 
 // Safe imports with fallbacks
 const SafeComponent = ({
@@ -27,27 +28,31 @@ const Home = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState(null); // This useState user is not used for auth status
   const [error, setError] = useState("");
 
   const router = useRouter();
+  const { user: authUser, loading: authLoading } = useAuth();
 
-  // Simulate auth check for now
   useEffect(() => {
-    // Simple timeout to simulate loading
-    const timer = setTimeout(() => {
+    // Set authReady based on authLoading after initial load
+    if (!authLoading) {
       setAuthReady(true);
-      setLoading(false);
-      console.log("Auth simulation complete");
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
+      setLoading(false); // Assuming the initial loading state is handled by authLoading
+      console.log("Auth status ready:", !!authUser); // Log auth status
+    }
+  }, [authLoading, authUser]);
 
   //handleconvert
   const handleConvert = async (playlistUrl: string) => {
     if (!playlistUrl.trim()) {
       alert("Please enter a valid playlist URL.");
+      return;
+    }
+
+    // Check if user is logged in before proceeding with conversion
+    if (!authUser) {
+      router.push("/login");
       return;
     }
 
@@ -98,7 +103,17 @@ const Home = () => {
     setIsModalOpen((prev) => !prev);
   };
 
-  if (loading) {
+  // Handle Try Now button click
+  const handleTryNowClick = () => {
+    if (authUser) {
+      handleModalToggle(); // Open modal if logged in
+    } else {
+      router.push("/login"); // Redirect to login if not logged in
+    }
+  };
+
+  if (authLoading) {
+    // Only check authLoading for initial load state
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto py-16 text-center">
@@ -129,12 +144,13 @@ const Home = () => {
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                   <button
                     className="bg-white text-blue-600 px-6 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors"
-                    onClick={handleModalToggle}
+                    onClick={handleTryNowClick}
                   >
                     Try Now
                   </button>
+                  {/* Use Link component for Start Learning with conditional href */}
                   <Link
-                    href="/mycourses"
+                    href={authUser ? "/mycourses" : "/login"}
                     className="bg-white/10 text-white border border-white/20 hover:bg-white/20 px-6 py-3 rounded-md font-semibold transition-colors inline-flex items-center justify-center"
                   >
                     <span className="mr-2">▶</span> Start Learning
@@ -289,7 +305,7 @@ const Home = () => {
                     Create your first course from YouTube content in minutes.
                   </p>
                   <button
-                    onClick={handleModalToggle}
+                    onClick={handleTryNowClick}
                     className="bg-white text-blue-600 px-6 py-3 rounded-md font-semibold hover:bg-gray-100 transition-colors"
                   >
                     Get Started
