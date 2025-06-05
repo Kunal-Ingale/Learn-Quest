@@ -82,7 +82,12 @@ const MyCourses: React.FC = () => {
         setError(null);
         const data = await apiCall("/course/mycourses");
         if (data && data.courses) {
-          setCourses(data.courses);
+          // Ensure progress is a number between 0 and 100
+          const coursesWithProgress = data.courses.map((course: Course) => ({
+            ...course,
+            progress: course.progress ? Math.round(course.progress) : 0,
+          }));
+          setCourses(coursesWithProgress);
         } else {
           console.error("Unexpected response format:", data);
           setCourses([]);
@@ -147,9 +152,9 @@ const MyCourses: React.FC = () => {
                     <h3 className="text-xl font-semibold flex-1 pr-2">
                       {course.title}
                     </h3>
-                    {course.progress !== undefined && (
-                      <CircularProgress percentage={course.progress} />
-                    )}
+                    <div className="flex-shrink-0">
+                      <CircularProgress percentage={course.progress || 0} />
+                    </div>
                   </div>
                   <p className="text-gray-600 text-sm mb-3">
                     {course.description}
