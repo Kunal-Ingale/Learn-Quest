@@ -29,6 +29,7 @@ const Header = () => {
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // State for mobile menu
+  const [imageError, setImageError] = useState(false);
   const dropdownRef = useRef(null);
   const mobileMenuRef = useRef(null); // Ref for mobile menu
 
@@ -146,23 +147,23 @@ const Header = () => {
         <div className="relative" ref={dropdownRef}>
           {user ? (
             <>
-              {user.photoURL ? (
-                <Image
-                  src={user.photoURL}
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                  className="rounded-full cursor-pointer hover:opacity-80"
-                  onClick={() => setDropdownOpen((prev) => !prev)}
-                />
-              ) : (
-                <div
-                  className="cursor-pointer hover:opacity-80"
-                  onClick={() => setDropdownOpen((prev) => !prev)}
-                >
+              <div
+                className="cursor-pointer hover:opacity-80"
+                onClick={() => setDropdownOpen((prev) => !prev)}
+              >
+                {user.photoURL && !imageError ? (
+                  <Image
+                    src={user.photoURL}
+                    alt="Profile"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
                   <DefaultUserIcon />
-                </div>
-              )}
+                )}
+              </div>
               {dropdownOpen && (
                 <div className="absolute top-10 right-0 mt-2 bg-white shadow-md rounded-md py-2 w-40 z-50">
                   <button
