@@ -151,6 +151,8 @@ export const getUserCourses = async (req: Request, res: Response) => {
           thumbnail,
           videos,
           videoIds: course.videoIds,
+          progress: course.progress || 0,
+          currentVideoId: course.currentVideoId || "",
         };
       })
     );

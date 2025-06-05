@@ -85,8 +85,12 @@ const MyCourses: React.FC = () => {
           // Ensure progress is a number between 0 and 100
           const coursesWithProgress = data.courses.map((course: Course) => ({
             ...course,
-            progress: course.progress ? Math.round(course.progress) : 0,
+            progress:
+              typeof course.progress === "number"
+                ? Math.round(course.progress)
+                : 0,
           }));
+          console.log("Courses with progress:", coursesWithProgress); // Debug log
           setCourses(coursesWithProgress);
         } else {
           console.error("Unexpected response format:", data);
