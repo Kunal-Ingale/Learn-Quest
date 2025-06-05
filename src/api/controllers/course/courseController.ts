@@ -91,12 +91,15 @@ export const saveCourse = async (req: Request, res: Response) => {
 export const getUserCourses = async (req: Request, res: Response) => {
   const userId = req.user?.uid;
 
- 
-
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+  if (!userId) {
+    console.error("Unauthorized: No userId found in request");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   try {
+    console.log("Fetching courses for user:", userId);
     const courses = await Course.find({ userId });
+    console.log("Found courses:", courses.length);
 
     const coursesWithDetails = await Promise.all(
       courses.map(async (course) => {
@@ -106,9 +109,8 @@ export const getUserCourses = async (req: Request, res: Response) => {
 
         if (course.videoIds?.length > 0) {
           try {
-            // Fetch all videos in the course
             const idsParam = course.videoIds.join(",");
-            //console.log("Fetching videos for course:", course._id, "Video IDs:", idsParam);
+            console.log("Fetching YouTube videos for course:", course._id);
             
             const videoRes = await axios.get(
               "https://www.googleapis.com/youtube/v3/videos",
@@ -120,8 +122,6 @@ export const getUserCourses = async (req: Request, res: Response) => {
                 },
               }
             );
-
-         //   console.log("YouTube API Response:", videoRes.data);
 
             const items = videoRes.data.items || [];
             videos = items.map((item: any, index: number) => ({
@@ -138,34 +138,31 @@ export const getUserCourses = async (req: Request, res: Response) => {
               }
             }
           } catch (error) {
-            console.error(`Error fetching video for course ${course._id}:`, error);
+            console.error(`Error fetching YouTube videos for course ${course._id}:`, error);
           }
         }
 
-        if (!channelName) {
-          channelName = "Unknown Channel";
-        }
-
-        const courseData = {
+        return {
           _id: course._id,
           title: course.title,
           playlistId: course.playlistId,
-          description: channelName,
+          description: channelName || "Unknown Channel",
           createdAt: course.createdAt,
           thumbnail,
           videos,
-          videoIds: course.videoIds, // Keep this for backward compatibility
+          videoIds: course.videoIds,
         };
-
-       // console.log("Processed course data:", courseData);
-        return courseData;
       })
     );
 
+    console.log("Successfully processed courses:", coursesWithDetails.length);
     res.status(200).json({ courses: coursesWithDetails });
   } catch (error) {
-    console.error("Error fetching user courses:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in getUserCourses:", error);
+    res.status(500).json({ 
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };
 

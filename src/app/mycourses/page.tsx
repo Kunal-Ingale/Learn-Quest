@@ -23,13 +23,13 @@ const MyCourses: React.FC = () => {
 
       try {
         const token = await user.getIdToken();
-        const res = await axios.get("/api/course/user", {
+        const res = await axios.get("/api/course/mycourses", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        if (Array.isArray(res.data)) {
-          setCourses(res.data);
+        if (res.data && res.data.courses) {
+          setCourses(res.data.courses);
         } else {
           console.error("Unexpected response format:", res.data);
           setCourses([]);
