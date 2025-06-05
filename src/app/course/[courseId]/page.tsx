@@ -544,9 +544,9 @@ const CoursePage: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50 overflow-hidden">
+      <div className="min-h-screen bg-gray-50 overflow-hidden relative">
         {/* Top Header with Course Title and Progress */}
-        <div className="bg-blue-50 rounded-xl shadow-md border border-blue-200 my-4 mx-4 lg:mx-6 p-4 lg:p-6 flex-shrink-0">
+        <div className="bg-blue-50 rounded-xl shadow-md border border-blue-200 my-4 mx-4 lg:mx-6 p-4 lg:p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-900 mb-2">
@@ -601,12 +601,9 @@ const CoursePage: React.FC = () => {
         </div>
 
         {/* Main Content - Responsive Layout (Video and List) */}
-        <div
-          className="flex flex-col lg:flex-row px-4 lg:px-6 pb-4 lg:pb-6 gap-6"
-          style={{ height: "calc(100vh - 200px)" }}
-        >
+        <div className="flex flex-col lg:flex-row px-4 lg:px-6 pb-4 lg:pb-6 gap-6 relative z-0">
           {/* Video Player Section */}
-          <div className="w-full lg:w-1/2 bg-white rounded-lg shadow overflow-hidden flex flex-col flex-shrink-0">
+          <div className="w-full lg:w-1/2 bg-white rounded-lg shadow overflow-hidden flex flex-col">
             <div className="aspect-video w-full bg-gray-900">
               {currentVideo ? (
                 <div id="yt-player" className="w-full h-full"></div>
@@ -714,9 +711,9 @@ const CoursePage: React.FC = () => {
           </div>
 
           {/* Video List Section */}
-          <div className="w-full lg:w-1/2 bg-white rounded-lg shadow flex flex-col overflow-hidden h-full">
+          <div className="w-full lg:w-1/2 bg-white rounded-lg shadow flex flex-col overflow-hidden">
             {/* Video List Header */}
-            <div className="bg-white px-4 lg:px-6 py-4 border-b border-gray-200 flex-shrink-0">
+            <div className="bg-white px-4 lg:px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-base lg:text-lg font-semibold text-gray-900">
                   Course Content
@@ -751,7 +748,10 @@ const CoursePage: React.FC = () => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto hide-scrollbar">
+            <div
+              className="flex-1 overflow-y-auto hide-scrollbar"
+              style={{ maxHeight: "calc(100vh - 400px)" }}
+            >
               {!showProgressHistory ? (
                 // Video List
                 <div className="divide-y divide-gray-100">

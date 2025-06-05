@@ -189,10 +189,9 @@ const Header = () => {
       {/* Mobile Menu */}
       <div
         ref={mobileMenuRef}
-        className={`absolute top-0 left-0 w-full bg-white shadow-md transition-transform duration-300 ease-in-out z-40 \
+        className={`fixed top-16 left-0 w-full bg-white shadow-md transition-transform duration-300 ease-in-out z-40 \
           ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"} \
           md:hidden`}
-        style={{ top: "64px" }} // Position below header
       >
         <nav className="flex flex-col items-center py-4 gap-4">
           <span
