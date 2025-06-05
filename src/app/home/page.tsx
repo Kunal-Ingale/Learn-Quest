@@ -54,11 +54,14 @@ const Home = () => {
     try {
       const headers = await getAuthHeaders();
 
-      const response = await fetch("http://localhost:5000/api/convert", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ playlistUrl }),
-      });
+      const response = await fetch(
+        "https://learnquest-ng5h.onrender.com/api/convert",
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ playlistUrl }),
+        }
+      );
 
       const data = await response.json();
 

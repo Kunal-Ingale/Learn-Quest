@@ -1,7 +1,7 @@
 import { getAuth } from "firebase/auth";
 
 // ✅ FIXED: Changed from port 3000 to 5000 to match your backend
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://learnquest-ng5h.onrender.com";
 
 export const getAuthHeaders = async () => {
   const auth = getAuth();
