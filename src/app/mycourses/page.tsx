@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { apiCall } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 
 // Circular Progress Component
 const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
@@ -65,8 +66,40 @@ const MyCourses: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
 
   const router = useRouter();
+
+  const handleDeleteCourse = async (courseId: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation(); // Prevent event bubbling
+
+    if (
+      !confirm(
+        "Are you sure you want to delete this course? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingCourseId(courseId);
+      const response = await apiCall(`/course/${courseId}`, {
+        method: "DELETE",
+      });
+
+      if (response.success) {
+        setCourses(courses.filter((course) => course._id !== courseId));
+      } else {
+        throw new Error(response.message || "Failed to delete course");
+      }
+    } catch (error) {
+      console.error("Error deleting course:", error);
+      alert("Failed to delete course. Please try again.");
+    } finally {
+      setDeletingCourseId(null);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,15 +115,21 @@ const MyCourses: React.FC = () => {
         setError(null);
         const data = await apiCall("/course/mycourses");
         if (data && data.courses) {
-          // Ensure progress is a number between 0 and 100
-          const coursesWithProgress = data.courses.map((course: Course) => ({
-            ...course,
-            progress:
-              typeof course.progress === "number"
-                ? Math.round(course.progress)
-                : 0,
-          }));
-          console.log("Courses with progress:", coursesWithProgress); // Debug log
+          // Ensure progress is a number between 0 and 100 and sort by date
+          const coursesWithProgress = data.courses
+            .map((course: Course) => ({
+              ...course,
+              progress:
+                typeof course.progress === "number"
+                  ? Math.round(course.progress)
+                  : 0,
+            }))
+            .sort(
+              (a: Course, b: Course) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            );
+          console.log("Courses with progress:", coursesWithProgress);
           setCourses(coursesWithProgress);
         } else {
           console.error("Unexpected response format:", data);
@@ -149,7 +188,7 @@ const MyCourses: React.FC = () => {
             {courses.map((course) => (
               <li
                 key={course._id}
-                className="border p-4 rounded shadow hover:shadow-md transition-shadow cursor-pointer bg-white"
+                className="border p-4 rounded shadow hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white relative"
               >
                 <Link href={`/course/${course._id}`} className="block h-full">
                   <div className="flex justify-between items-start mb-2">
@@ -172,7 +211,12 @@ const MyCourses: React.FC = () => {
                   )}
                   <div className="mt-3 text-sm text-gray-500">
                     <p>
-                      Started: {new Date(course.createdAt).toLocaleDateString()}
+                      Started:{" "}
+                      {new Date(course.createdAt).toLocaleDateString("en-US", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
                     </p>
                     {course.videos && (
                       <p className="mt-1">
@@ -182,6 +226,18 @@ const MyCourses: React.FC = () => {
                     )}
                   </div>
                 </Link>
+                <button
+                  onClick={(e) => handleDeleteCourse(course._id, e)}
+                  disabled={deletingCourseId === course._id}
+                  className="absolute bottom-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-200"
+                  title="Delete course"
+                >
+                  {deletingCourseId === course._id ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                  ) : (
+                    <Trash2 size={20} />
+                  )}
+                </button>
               </li>
             ))}
           </ul>

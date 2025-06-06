@@ -5,10 +5,9 @@ import {
   getUserCourses,
   updateCourseProgress,
   getCourseProgress,
+  deleteCourse,
 } from "./controllers/course/courseController";
 import { verifyFirebaseToken } from "@/middleware/firebaseAuth";
-
-
 
 const router = express.Router();
 
@@ -19,7 +18,6 @@ router.get("/mycourses", getUserCourses);
 router.get("/:courseId", getCourse);
 router.patch("/:courseId/progress", updateCourseProgress);
 router.get("/:courseId/progress", getCourseProgress);
-
-
+router.delete("/:courseId", deleteCourse);
 
 export default router;
