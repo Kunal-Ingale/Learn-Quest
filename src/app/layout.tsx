@@ -10,6 +10,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta
+          name="google-site-verification"
+          content="Oklom_hYC6f8kbYVhm5kTk4iEGZlSF29c0n54V7QOGY"
+        />
         <link
           rel="apple-touch-icon"
           sizes="180x180"
