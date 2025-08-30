@@ -1,21 +1,16 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/AuthContext";
+import React from "react";
+import { GetServerSideProps } from "next";
+import { apiCall, getAuthHeaders } from "@/lib/api";
 import Header from "@/components/layout/Header";
-import dynamic from "next/dynamic";
-import { apiCall } from "@/lib/api";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
-// Circular Progress Component
 const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
   percentage,
   size = 40,
 }) => {
   const radius = (size - 4) / 2;
   const circumference = radius * 2 * Math.PI;
-  const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
@@ -36,7 +31,7 @@ const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
           stroke="#3b82f6"
           strokeWidth="4"
           fill="transparent"
-          strokeDasharray={strokeDasharray}
+          strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
           className="transition-all duration-300 ease-in-out"
@@ -61,106 +56,13 @@ interface Course {
   currentVideoId?: string;
 }
 
-const MyCourses: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
+interface MyCoursesProps {
+  courses: Course[];
+  error?: string;
+}
 
-  const router = useRouter();
-
-  const handleDeleteCourse = async (courseId: string, e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation
-    e.stopPropagation(); // Prevent event bubbling
-
-    if (
-      !confirm(
-        "Are you sure you want to delete this course? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setDeletingCourseId(courseId);
-      const response = await apiCall(`/course/${courseId}`, {
-        method: "DELETE",
-      });
-
-      if (response.success) {
-        setCourses(courses.filter((course) => course._id !== courseId));
-      } else {
-        throw new Error(response.message || "Failed to delete course");
-      }
-    } catch (error) {
-      console.error("Error deleting course:", error);
-      alert("Failed to delete course. Please try again.");
-    } finally {
-      setDeletingCourseId(null);
-    }
-  };
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-      return;
-    }
-
-    const fetchCourses = async () => {
-      if (!user) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await apiCall("/course/mycourses");
-        if (data && data.courses) {
-          // Ensure progress is a number between 0 and 100 and sort by date
-          const coursesWithProgress = data.courses
-            .map((course: Course) => ({
-              ...course,
-              progress:
-                typeof course.progress === "number"
-                  ? Math.round(course.progress)
-                  : 0,
-            }))
-            .sort(
-              (a: Course, b: Course) =>
-                new Date(b.createdAt).getTime() -
-                new Date(a.createdAt).getTime()
-            );
-          console.log("Courses with progress:", coursesWithProgress);
-          setCourses(coursesWithProgress);
-        } else {
-          console.error("Unexpected response format:", data);
-          setCourses([]);
-          setError("Failed to load courses");
-        }
-      } catch (error) {
-        console.error("Error fetching courses:", error);
-        setError("Failed to load courses. Please try again later.");
-        setCourses([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchCourses();
-    }
-  }, [user, authLoading, router]);
-
-  if (authLoading || loading)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your courses...</p>
-        </div>
-      </div>
-    );
-
-  if (error)
+const MyCourses: React.FC<MyCoursesProps> = ({ courses, error }) => {
+  if (error) {
     return (
       <>
         <Header />
@@ -175,6 +77,7 @@ const MyCourses: React.FC = () => {
         </div>
       </>
     );
+  }
 
   return (
     <>
@@ -226,18 +129,6 @@ const MyCourses: React.FC = () => {
                     )}
                   </div>
                 </Link>
-                <button
-                  onClick={(e) => handleDeleteCourse(course._id, e)}
-                  disabled={deletingCourseId === course._id}
-                  className="absolute bottom-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-200"
-                  title="Delete course"
-                >
-                  {deletingCourseId === course._id ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
-                  ) : (
-                    <Trash2 size={20} />
-                  )}
-                </button>
               </li>
             ))}
           </ul>
@@ -247,16 +138,56 @@ const MyCourses: React.FC = () => {
   );
 };
 
-const MyCoursesPage = dynamic(() => Promise.resolve(MyCourses), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    </div>
-  ),
-});
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const token = context.req.headers.authorization?.split("Bearer ")[1];
 
-export default MyCoursesPage;
+    if (!token) {
+      return {
+        props: {
+          courses: [],
+          error: "User not authenticated",
+        },
+      };
+    }
+
+    // Pass the token explicitly to getAuthHeaders
+    const headers = await getAuthHeaders(token);
+
+    // Make the API call with the headers
+    const data = await apiCall("/course/mycourses", {
+      headers,
+    });
+
+    if (data && data.courses) {
+      const courses = data.courses.map((course: Course) => ({
+        ...course,
+        progress:
+          typeof course.progress === "number" ? Math.round(course.progress) : 0,
+      }));
+
+      return {
+        props: {
+          courses,
+        },
+      };
+    } else {
+      return {
+        props: {
+          courses: [],
+          error: "Failed to load courses",
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching courses:", error);
+    return {
+      props: {
+        courses: [],
+        error: "Failed to load courses. Please try again later.",
+      },
+    };
+  }
+};
+
+export default MyCourses;
