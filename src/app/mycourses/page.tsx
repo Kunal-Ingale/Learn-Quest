@@ -3,7 +3,6 @@ import { GetServerSideProps } from "next";
 import { apiCall, getAuthHeaders } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
 
 const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
   percentage,
