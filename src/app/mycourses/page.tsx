@@ -1,45 +1,94 @@
+import React, { useEffect, useState } from "react";
+import { apiCall } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import Link from "next/link";
-import { auth } from "@/lib/firebase";
-import { cookies } from "next/headers";
-import CircularProgress from "@/components/CircularProgress";
 
-const API_BASE_URL = "https://learnquest-ng5h.onrender.com";
+// Circular progress component
+const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
+  percentage,
+  size = 40,
+}) => {
+  const radius = (size - 4) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
-async function getCourses() {
-  const cookieStore = await cookies();
-  let token = cookieStore.get("token")?.value; // Firebase token set in cookies
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg width={size} height={size} className="transform -rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#e5e7eb"
+          strokeWidth="4"
+          fill="transparent"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#3b82f6"
+          strokeWidth="4"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-300 ease-in-out"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-xs font-bold text-blue-600">{percentage}%</span>
+      </div>
+    </div>
+  );
+};
 
-  // Fallback to client-side auth if server-side cookie is not present (e.g., first login)
-  if (!token) {
-    const user = auth.currentUser;
-    if (user) {
-      token = await user.getIdToken();
-    }
-  }
-
-  if (!token) {
-    return [];
-  }
-
-  const res = await fetch(`${API_BASE_URL}/api/course/mycourses`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store", // ensures SSR fetch always gets fresh data
-  });
-
-  if (!res.ok) {
-    console.error("Failed to fetch courses", await res.text());
-    return [];
-  }
-
-  const data = await res.json();
-  return data.courses || [];
+interface Course {
+  _id: string;
+  title: string;
+  playlistId: string;
+  createdAt: string;
+  description?: string;
+  thumbnail?: string;
+  videos?: any[];
+  progress?: number;
+  currentVideoId?: string;
 }
 
-export default async function MyCoursesPage() {
-  const courses = await getCourses();
+const MyCourses: React.FC = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const data = await apiCall("/course/mycourses");
+        setCourses(data.courses || []);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+        setError("Failed to load courses. Please try again later.");
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  if (error) {
+    return (
+      <>
+        <Header />
+        <div className="p-4">
+          <div className="text-red-500 mb-4">{error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -49,8 +98,8 @@ export default async function MyCoursesPage() {
         {courses.length === 0 ? (
           <p>You haven't created any courses yet.</p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {courses.map((course: any) => (
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 space-y-0">
+            {courses.map((course) => (
               <li
                 key={course._id}
                 className="border p-4 rounded shadow hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white relative"
@@ -64,9 +113,11 @@ export default async function MyCoursesPage() {
                       <CircularProgress percentage={course.progress || 0} />
                     </div>
                   </div>
+
                   <p className="text-gray-600 text-sm mb-3">
                     {course.description}
                   </p>
+
                   {course.thumbnail && (
                     <img
                       src={course.thumbnail}
@@ -74,6 +125,7 @@ export default async function MyCoursesPage() {
                       className="w-full h-48 object-cover rounded mt-2"
                     />
                   )}
+
                   <div className="mt-3 text-sm text-gray-500">
                     <p>
                       Started:{" "}
@@ -98,4 +150,6 @@ export default async function MyCoursesPage() {
       </div>
     </>
   );
-}
+};
+
+export default MyCourses;
