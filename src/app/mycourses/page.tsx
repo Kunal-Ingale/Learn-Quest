@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { apiCall } from "@/lib/api";
 import Header from "@/components/layout/Header";
