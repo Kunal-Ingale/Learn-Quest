@@ -14,9 +14,8 @@
 
 - **Convert YouTube Playlists**: Paste a YouTube playlist or video URL and seamlessly turn it into a structured course.
 - **Track Progress**: Mark lessons as complete and see your learning journey visualized in your dashboard.
-- **Take Notes**: Add, review, and organize notes as you watch each lesson.
 - **Organized Interface**: Enjoy a clean and intuitive UI for efficient learning.
-- **Personal Dashboard**: View all your courses, completed lessons, and notes in one place.
+- **Personal Dashboard**: View all your courses & completed lessons in one place.
 - **Authentication**: Secure login, with courses and progress tied to your account.
 - **Responsive Design**: Built mobile-first to look great on any device.
 
