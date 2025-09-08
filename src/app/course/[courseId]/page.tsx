@@ -211,55 +211,6 @@ const CoursePage: React.FC = () => {
     fetchCourse();
   }, [courseId, authReady, router]);
 
-  // Load progress from localStorage
-  // useEffect(() => {
-  //   if (courseId && typeof courseId === "string") {
-  //     const saved = localStorage.getItem(`progress-${courseId}`);
-  //     if (saved) {
-  //       try {
-  //         setCompletedVideos(JSON.parse(saved));
-  //       } catch (e) {
-  //         console.error("Error parsing saved progress:", e);
-  //         setCompletedVideos([]);
-  //       }
-  //     }
-  //     setProgressLoaded(true);
-  //   }
-  // }, [courseId]);
-
-  // // Save progress to localStorage
-  // useEffect(() => {
-  //   if (courseId && progressLoaded && typeof courseId === "string") {
-  //     localStorage.setItem(
-  //       `progress-${courseId}`,
-  //       JSON.stringify(completedVideos)
-  //     );
-  //   }
-  // }, [completedVideos, courseId, progressLoaded]);
-
-  // // Load progress history from localStorage
-  // useEffect(() => {
-  //   if (courseId && typeof courseId === "string") {
-  //     const saved = localStorage.getItem(`progress-history-${courseId}`);
-  //     if (saved) {
-  //       try {
-  //         const history = JSON.parse(saved);
-  //         // Sort by completedAt in descending order (latest first)
-  //         history.sort(
-  //           (a: ProgressHistory, b: ProgressHistory) =>
-  //             new Date(b.completedAt).getTime() -
-  //             new Date(a.completedAt).getTime()
-  //         );
-  //         setProgressHistory(history);
-  //       } catch (e) {
-  //         console.error("Error parsing saved progress history:", e);
-  //         setProgressHistory([]);
-  //       }
-  //     }
-  //   }
-  // }, [courseId]);
-
-  // ----------------------------------
   const progressPercent = useMemo(() => {
     if (!course) return 0;
     return Math.round((completedVideos.length / course.videos.length) * 100);
@@ -437,10 +388,10 @@ const CoursePage: React.FC = () => {
       ...progressHistory,
     ];
     setProgressHistory(newHistory);
-    localStorage.setItem(
-      `progress-history-${courseId}`,
-      JSON.stringify(newHistory)
-    );
+    // localStorage.setItem(
+    //   `progress-history-${courseId}`,
+    //   JSON.stringify(newHistory)
+    // );
   };
 
   // Modify the existing toggleCompleted function

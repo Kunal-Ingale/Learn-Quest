@@ -4,19 +4,17 @@ import admin from "@/utils/firebase";
 export const verifyFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("❌ No valid authorization header");
+    console.log(" No valid authorization header");
     return res.status(401).json({ error: "No token provided" });
   }
 
-  const idToken = authHeader.split("Bearer ")[1];
-  // console.log("🎫 Token length:", idToken.length);
+  const idToken = authHeader.split("Bearer ")[1]; 
+  // console.log("Token length:", idToken.length);
 
   try {
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    // console.log("✅ Token verified for user:", decodedToken.uid);
-    // console.log("📧 User email:", decodedToken.email);
+    // console.log(" Token verified for user:", decodedToken.uid);
     
     req.user = decodedToken;
     next();

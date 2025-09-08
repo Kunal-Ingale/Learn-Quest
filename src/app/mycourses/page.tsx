@@ -1,82 +1,36 @@
-import React from "react";
-import { GetServerSideProps } from "next";
-import { apiCall, getAuthHeaders } from "@/lib/api";
 import Header from "@/components/layout/Header";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import CircularProgress from "@/components/circularProgress"; // extract CircularProgress into its own file
 
-const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
-  percentage,
-  size = 40,
-}) => {
-  const radius = (size - 4) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+const API_BASE_URL = "https://learnquest-ng5h.onrender.com";
 
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#e5e7eb"
-          strokeWidth="4"
-          fill="transparent"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#3b82f6"
-          strokeWidth="4"
-          fill="transparent"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
-          className="transition-all duration-300 ease-in-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-xs font-bold text-blue-600">{percentage}%</span>
-      </div>
-    </div>
-  );
-};
+async function getCourses() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value; // Firebase token set in cookies
 
-interface Course {
-  _id: string;
-  title: string;
-  playlistId: string;
-  createdAt: string;
-  description?: string;
-  thumbnail?: string;
-  videos?: any[];
-  progress?: number;
-  currentVideoId?: string;
-}
-
-interface MyCoursesProps {
-  courses: Course[];
-  error?: string;
-}
-
-const MyCourses: React.FC<MyCoursesProps> = ({ courses, error }) => {
-  if (error) {
-    return (
-      <>
-        <Header />
-        <div className="p-4">
-          <div className="text-red-500 mb-4">{error}</div>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Retry
-          </button>
-        </div>
-      </>
-    );
+  if (!token) {
+    return [];
   }
+
+  const res = await fetch(`${API_BASE_URL}/api/course/mycourses`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store", // ensures SSR fetch always gets fresh data
+  });
+
+  if (!res.ok) {
+    console.error("Failed to fetch courses", await res.text());
+    return [];
+  }
+
+  const data = await res.json();
+  return data.courses || [];
+}
+
+export default async function MyCoursesPage() {
+  const courses = await getCourses();
 
   return (
     <>
@@ -86,8 +40,8 @@ const MyCourses: React.FC<MyCoursesProps> = ({ courses, error }) => {
         {courses.length === 0 ? (
           <p>You haven't created any courses yet.</p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 space-y-0">
-            {courses.map((course) => (
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.map((course: any) => (
               <li
                 key={course._id}
                 className="border p-4 rounded shadow hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white relative"
@@ -135,58 +89,4 @@ const MyCourses: React.FC<MyCoursesProps> = ({ courses, error }) => {
       </div>
     </>
   );
-};
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  try {
-    const token = context.req.headers.authorization?.split("Bearer ")[1];
-
-    if (!token) {
-      return {
-        props: {
-          courses: [],
-          error: "User not authenticated",
-        },
-      };
-    }
-
-    // Pass the token explicitly to getAuthHeaders
-    const headers = await getAuthHeaders(token);
-
-    // Make the API call with the headers
-    const data = await apiCall("/course/mycourses", {
-      headers,
-    });
-
-    if (data && data.courses) {
-      const courses = data.courses.map((course: Course) => ({
-        ...course,
-        progress:
-          typeof course.progress === "number" ? Math.round(course.progress) : 0,
-      }));
-
-      return {
-        props: {
-          courses,
-        },
-      };
-    } else {
-      return {
-        props: {
-          courses: [],
-          error: "Failed to load courses",
-        },
-      };
-    }
-  } catch (error) {
-    console.error("Error fetching courses:", error);
-    return {
-      props: {
-        courses: [],
-        error: "Failed to load courses. Please try again later.",
-      },
-    };
-  }
-};
-
-export default MyCourses;
+}

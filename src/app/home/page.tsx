@@ -90,7 +90,7 @@ const Home = () => {
         throw new Error("No course ID received from server");
       }
 
-      console.log("New course created:", data.courseId);
+      //console.log("New course created:", data.courseId);
       setIsModalOpen(false);
       router.push(`/course/${encodeURIComponent(data.courseId)}`);
     } catch (err) {

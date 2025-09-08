@@ -2,7 +2,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface ICourse extends Document {
-  userId: string; // 👈 Add user reference
+  userId: string; 
   title: string;
   playlistId: string;
   description: string;
