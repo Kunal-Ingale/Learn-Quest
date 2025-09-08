@@ -1,13 +1,22 @@
 import Header from "@/components/layout/Header";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
 import { cookies } from "next/headers";
-import CircularProgress from "@/components/circularProgress"; // extract CircularProgress into its own file
+import CircularProgress from "@/components/CircularProgress";
 
 const API_BASE_URL = "https://learnquest-ng5h.onrender.com";
 
 async function getCourses() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value; // Firebase token set in cookies
+  let token = cookieStore.get("token")?.value; // Firebase token set in cookies
+
+  // Fallback to client-side auth if server-side cookie is not present (e.g., first login)
+  if (!token) {
+    const user = auth.currentUser;
+    if (user) {
+      token = await user.getIdToken();
+    }
+  }
 
   if (!token) {
     return [];

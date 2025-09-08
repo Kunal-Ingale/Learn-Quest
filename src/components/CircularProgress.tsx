@@ -1,7 +1,12 @@
 "use client";
 import React from "react";
 
-const CircularProgress: React.FC<{ percentage: number; size?: number }> = ({
+interface CircularProgressProps {
+  percentage: number;
+  size?: number;
+}
+
+const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
   size = 40,
 }) => {
